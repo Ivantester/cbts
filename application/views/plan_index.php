@@ -22,17 +22,31 @@
           <ul class="nav nav-pills nav-stacked nav-email mb20">
             <?php foreach ($planFolder as $key => $value) {?>
             
-            <li<?php if ($planId == $value['id']) {?> class="active"<?php } ?>><a href="/plan?planId=<?php echo $value['id'];?>"><i class="glyphicon glyphicon-folder-<?php if ($planId == $value['id']) { echo 'open';} else { echo 'close';}?>"></i> <?php echo $value['plan_name'];?></a></li>
+            <li class="ellipsis <?php if ($planId == $value['id']) { echo 'active'; } ?>"><a href="/plan?planId=<?php echo $value['id'];?>" title="<?php echo $value['plan_name'];?>"><span style="white-space:nowrap; display:block; overflow:hidden;text-overflow:ellipsis;"><i class="glyphicon glyphicon-folder-<?php if ($planId == $value['id']) { echo 'open';} else { echo 'close';}?>"></i>&nbsp;&nbsp;<?php echo $value['plan_name'];?></span></a></li>
             <?php } ?>
           </ul>
           <?php } ?>
         </div><!-- col-sm-3 -->
         <div class="col-sm-9 col-lg-10">
-          <div class="mb10" align="right"><a href="/issue/add?planId=<?php echo $currPlan['id'];?>" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> 添加任务</a></div>
+          <?php if ($planFolder) {?><div class="mb10" align="right"><a href="/issue/add?planId=<?php echo $currPlan['id'];?>" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> 添加任务</a></div><?php } ?>
           <?php if ($planId) {?>
           <div class="panel panel-default">
             <div class="panel-body">
               <div class="pull-right">
+                <div class="btn-group move" style="display:none">
+                  <div class="btn-group nomargin">
+                    <button data-toggle="dropdown" class="btn btn-sm btn-info dropdown-toggle tooltips" title="只有新建的任务才可以移动" type="button" style="text-transform:uppercase;">
+                      把选中的任务移动到 <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                      <?php foreach ($planFolder as $key => $value) {?>
+                      <?php if ($value['id'] != $planId) {?>
+                      <li><a href="javascript:;" class="move-issue" data-planid="<?php echo $value['id']; ?>"><?php echo $value['plan_name'];?></a></li>
+                      <?php } ?>
+                      <?php } ?>
+                    </ul>
+                  </div>
+                </div>
                 <div class="btn-group">
                   <div class="btn-group nomargin">
                     <button data-toggle="dropdown" class="btn btn-sm btn-white dropdown-toggle tooltips" type="button" title="根据工作流筛选" style="text-transform:uppercase;">
@@ -63,21 +77,32 @@
                   </div>
                 </div>
               </div><!-- pull-right -->
-              <h5 class="subtitle mb5">计划内容</h5>
+              <h5 class="subtitle mb5"><?php echo $currPlan['plan_name']; ?> 计划的内容</h5>
               <p class="text-muted">查询结果：<?php echo $total;?></p>
               <div class="table-responsive">
                 <table class="table table-email">
                   <tbody>
                     <?php
                       if ($rows) {
+                        $weekarray=array("日","一","二","三","四","五","六");
                         if (file_exists('./cache/users.conf.php'))
                             require './cache/users.conf.php';
                         foreach ($rows as $value) {
+                          $timeDay = date("Ymd", $value['add_time']);
+                          if (!isset($timeGroup[$timeDay])) {
+                            if ($timeDay == date("Ymd", time())) {
+                              $day = '<span style="color:green">今天</span>';
+                            } else {
+                              $day = date('Y-m-d', $value['add_time']).' 星期'.$weekarray[date("w",$value['add_time'])];
+                            }
+                            echo '<tr><td colspan="8"><span class="fa fa-calendar"></span> 创建时间：'.$day.'</td></tr>';
+                          }
+                        $timeGroup[$timeDay] = 1;
                     ?>
                     <tr class="unread">
                       <td>
                         <div class="ckbox ckbox-success">
-                          <input type="checkbox" id="checkbox<?php echo $value['id'];?>">
+                          <input type="checkbox" class="chk" name="itemchk" id="checkbox<?php echo $value['id'];?>" value="<?php echo $value['id'];?>">
                           <label for="checkbox<?php echo $value['id'];?>"></label>
                         </div>
                       </td>
@@ -102,7 +127,7 @@
                       <td align="center" width="30px">
                         <?php if ($value['type'] == 2) {?><i class="fa fa-bug tooltips" data-toggle="tooltip" title="BUG"></i><?php } ?><?php if ($value['type'] == 1) {?><i class="fa fa-magic tooltips" data-toggle="tooltip" title="TASK"></i><?php } ?>
                       </td>
-                      <td><?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/issue/view/<?php echo $value['id'];?>" target="_blank"><?php echo $value['issue_name'];?></a></span>
+                      <td><?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/issue/view/<?php echo $value['id'];?>" target="_blank"><?php if ($value['status'] == '-1') { echo '<del>'.$value['issue_name'].'</del>'; } else { echo $value['issue_name']; } ?></a><?php if ($value['status'] == '-1') echo ' <span class="label label-default">已删除</span>'; ?>
                       </td>
                       <td><span class="media-meta pull-right"><?php echo date("Y/m/d H:i", $value['add_time'])?></span></td>
                     </tr>
@@ -122,13 +147,29 @@
           <?php if ($planId && $currPlan) {?>
           <div class="panel panel-default">
             <div class="panel-body">
+              <h5 class="subtitle subtitle-lined">计划进度</h5>
+              <?php
+              $timeline = unserialize($currPlan['timeline']);
+              $endtime = $currPlan['endtime'];
+              $timeline['online'] > $currPlan['endtime'] && $endtime = $timeline['online'];
+              $total = $endtime - $currPlan['startime'];
+              $devPer = sprintf("%.2f", ($timeline['test'] - $timeline['dev'])/$total)*100;
+              $testPer = sprintf("%.2f", ($timeline['test'] - $timeline['dev'])/$total)*100;
+              $onlinePer = sprintf("%.2f", ($timeline['online'] - $timeline['test'])/$total)*100;
+              ?>
+              <span class="sublabel">实际用时（需求创建：<?php echo date("Y/m/d H:i:s", $timeline['new']); ?>, 开发用时：<?php echo date("Y/m/d H:i:s", $timeline['dev']); ?>, 测试用时：<?php echo date("Y/m/d H:i:s", $timeline['test']); ?>, 上线用时：<?php echo date("Y/m/d H:i:s", $timeline['online']); ?>）</span>
+              <div class="progress progress-sm">
+                <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="<?php echo $devPer; ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?php echo $devPer; ?>%"></div>
+                <div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="<?php echo $testPer; ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?php echo $testPer; ?>%"></div>
+                <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="<?php echo $onlinePer; ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?php echo $onlinePer; ?>%"></div>
+              </div>
               <h5 class="subtitle subtitle-lined">计划概览</h5>
               <div class="table-responsive">
                 <table class="table table-striped">
                   <tbody>
                     <tr>
                       <td width="100px">计划全称：</td>
-                      <td><?php echo $currPlan['plan_name']?></td>
+                      <td><?php echo $currPlan['plan_name']?><?php if ($this->input->cookie('uids') == $currPlan['add_user']) { ?> <a href="javascript:;" data-target="#myModal-plan" data-toggle="modal" id="plan-edit">编辑</a> <a href="javascript:;" id="plan-del">删除</a><?php } ?></td>
                       <td width="120px">提测成功率：</td>
                       <td><span class="label label-info" id="rate">计算中</span> <i class="glyphicon glyphicon-question-sign tooltips" title="提测成功率越低，代表质量越差。"></i></td>
                     </tr>
@@ -136,13 +177,25 @@
                       <td width="100px">创建人：</td>
                       <td><a href="/conf/profile/<?php echo $currPlan['add_user'];?>" class="pull-left face"><img alt="" src="/static/avatar/<?php echo $users[$currPlan['add_user']]['username'];?>.jpg" align="absmiddle" title="创建人：<?php echo $users[$currPlan['add_user']]['realname'];?>"></a></td>
                       <td width="120px">参与人员：</td>
-                      <td>N/A</td>
+                      <td>
+                        <?php 
+                        if ($team) { 
+                          foreach ($team as $key => $value) {
+                        ?>
+                        <a href="/conf/profile/<?php echo $value['accept_user'];?>" class="pull-left face"><img alt="" src="/static/avatar/<?php echo $users[$value['accept_user']]['username'];?>.jpg" align="absmiddle" title="<?php echo $users[$value['accept_user']]['realname'];?>"></a> 
+                        <?php
+                          }
+                        } else {
+                          echo 'N/A';
+                        }
+                        ?>
+                      </td>
                     </tr>
                     <tr>
                       <td width="100px">创建时间：</td>
                       <td><?php echo date("Y/m/d H:i:s", $currPlan['add_time']);?></td>
                       <td width="120px">当前进度：</td>
-                      <td><span class="label label-primary">新建</span></td>
+                      <td><?php if ($currPlan['state'] == '1') { ?><span class="label label-default">新建</span><?php } ?><?php if ($currPlan['state'] == '2') { ?><span class="label label-primary">开发中</span><?php } ?><?php if ($currPlan['state'] == '3') { ?><span class="label label-warning">测试中</span><?php } ?><?php if ($currPlan['state'] == '4') { ?><span class="label label-success">已上线</span><?php } ?></td>
                     </tr>
                     <tr>
                       <td width="100px">开始时间：</td>
@@ -154,7 +207,20 @@
                       <td width="100px">规划时长：</td>
                       <td><?php echo timediff($currPlan['startime'], $currPlan['endtime']);?></td>
                       <td width="120px">距离结束：</td>
-                      <td><div id="clock"></div></td>
+                      <td>
+                        <?php
+                        if ($currPlan['timeline']) {
+                          $timeline = unserialize($currPlan['timeline']);
+                          if (isset($timeline['online'])) {
+                            echo timediff($timeline['online'], $currPlan['endtime'], 0, 1);
+                          } else {
+                            echo '<div id="clock"></div>';
+                          }
+                        } else {
+                          echo '<div id="clock"></div>';
+                        }
+                        ?>
+                        </td>
                     </tr>
                     <tr>
                       <td width="100px">简介：</td>
@@ -165,7 +231,7 @@
               </div><!-- table-responsive -->
               <div class="alert alert-warning">
                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                <strong>说明：</strong>计划有四种状态：“新建”，“开发”，“测试”，“上线”。计划状态的改变有手动方式和自动方式（通过后台Worker监控每个计划是否达到状态变更标准），除非计划变更为上线状态，否则。<code>距离结束时间</code>会一直走。上线状态变更的时间减去计划规划的截止时间，就是该计划的误差时间。这个误差时间是一个非常重要的参考值。<br />功能正在优化中，预计5.22号之前上线。
+                <strong>说明：</strong>计划有四种状态：“新建”，“开发”，“测试”，“上线”。计划状态的改变有手动方式和自动方式（通过后台Worker监控每个计划是否达到状态变更标准），除非计划变更为上线状态，否则，<code>距离结束时间</code>会一直走。上线状态变更的时间减去计划规划的截止时间，就是该计划的误差时间。这个误差时间是一个非常重要的参考值。<br />功能正在优化中，预计5.22号之前上线。
               </div>
             </div>
           </div>
@@ -221,6 +287,7 @@
         </div>
       </div>
       <input type="hidden" name="<?php echo $this->security->get_csrf_token_name();?>" value="<?php echo $this->security->get_csrf_hash();?>" />
+      <input type="hidden" name="plan_id" id="plan_id" value="0" />
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
         <button class="btn btn-primary" id="btnSubmit">提交</button>
@@ -266,19 +333,19 @@ function callBack(data) {
       time: ''
     });
     setTimeout(function(){
-      location.href = data.url;
+      location.href = '/plan';
     }, 2000);
   } else {
     jQuery.gritter.add({
       title: '提醒',
-      text: data.message,
+      text: data.error,
         class_name: 'growl-danger',
         image: '/static/images/screen.png',
       sticky: false,
       time: ''
     });
     setTimeout(function(){
-      location.href = data.url;
+      location.href = '/plan';
     }, 3000);
   }
 }
@@ -290,7 +357,7 @@ jQuery(document).ready(function(){
   $("#basicForm").submit(function(){
     $(this).ajaxSubmit({
       type:"post",
-      url: "/plan/add_ajax",
+      url: "/plan/add_ajax/"+<?php if ($currPlan['id']) { echo $currPlan['id']; } else { echo '0'; } ?>,
       dataType: "JSON",
       beforeSubmit:validForm,
       success:callBack
@@ -385,6 +452,113 @@ jQuery(document).ready(function(){
       }
     });
   }, 1000);
+
+  //编辑计划
+  $("#plan-edit").click(function(){
+    $(".modal-title").text('编辑计划');
+    $.ajax({
+      type: "GET",
+      url: "/plan/get_info/"+<?php if ($currPlan['id']) { echo $currPlan['id']; } else { echo '0'; } ?>,
+      dataType: "JSON",
+      success: function(data){
+        if (data.status) {
+          $("#plan_name").val(data.output.plan_name);
+          $("#plan_discription").val(data.output.plan_discription);
+          $("#startime").val(data.output.startime);
+          $("#endtime").val(data.output.endtime);
+          $("#plan_id").val(<?php echo $currPlan['id']; ?>);
+        } else {
+         $(".modal-body").html(data.message);
+        }
+      }
+    });
+  });
+
+  $("#plan-del").click(function(){
+    var c = confirm('任务已经移出完毕了吗？');
+    if(c) {
+      $.ajax({
+        type: "GET",
+        url: "/plan/del/"+<?php if ($currPlan['id']) { echo $currPlan['id']; } else { echo '0'; } ?>,
+        dataType: "JSON",
+        success: function(data){
+          if (data.status) {
+            jQuery.gritter.add({
+              title: '提醒',
+              text: data.message,
+                class_name: 'growl-success',
+                image: '/static/images/screen.png',
+              sticky: false,
+              time: ''
+            });
+            setTimeout(function(){
+              location.href = '/plan';
+            }, 2000);
+          } else {
+            jQuery.gritter.add({
+              title: '提醒',
+              text: data.error,
+                class_name: 'growl-danger',
+                image: '/static/images/screen.png',
+              sticky: false,
+              time: ''
+            });
+            setTimeout(function(){
+              location.href = '/plan';
+            }, 3000);
+          }
+        }
+      });
+    }
+  });
+
+  $(".chk").change(function() {
+    var num = $(":input[name=itemchk]:checked").length;
+    if (num) {
+      $(".move").show();
+    } else {
+      $(".move").hide();
+    }
+  });
+
+  //移动任务
+  $(".move-issue").click(function() {
+    var planId = $(this).attr('data-planid');
+    var chk_value = [];
+    $('input[name="itemchk"]:checked').each(function() {
+      chk_value.push($(this).val());
+    });
+    $.ajax({
+      type: "POST",
+      url: "/plan/move_issue",
+      data: "planId="+planId+"&issueId="+chk_value+"&<?php echo $this->security->get_csrf_token_name();?>=<?php echo $this->security->get_csrf_hash();?>",
+      dataType: "JSON",
+      success: function(data){
+        if (data.status) {
+          jQuery.gritter.add({
+            title: '提醒',
+            text: data.message,
+              class_name: 'growl-success',
+              image: '/static/images/screen.png',
+            sticky: false,
+            time: ''
+          });
+          setTimeout(function(){
+            location.href = '/plan?planId='+planId;
+          }, 1000);
+        } else {
+          jQuery.gritter.add({
+            title: '提醒',
+            text: data.error,
+              class_name: 'growl-danger',
+              image: '/static/images/screen.png',
+            sticky: false,
+            time: ''
+          });
+        }
+      }
+    });
+  });
   
 });
 </script>

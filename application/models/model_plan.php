@@ -13,28 +13,29 @@ class Model_plan extends CI_Model {
      * 插入数据库
      */
     public function add($data) {
-        $feedback = array(
-            'status' => false,
-            'message' => ''
-        );
         $res = $this->db->insert($this->_table, $data);
-        if ($res) {
-            $feedback['status'] = true;
-            $feedback['message'] = 'success';
-        } else {
-            $feedback['message'] = $this->db->error();
-        }
-        return $feedback;
+        return $res;
     }
 
     public function planFolder($projectId) {
         $row = array();
         $this->db->select('id, plan_name');
         $this->db->where('project_id', $projectId);
+        $this->db->where('status', 1);
         $this->db->order_by('id', 'desc');
         $query = $this->db->get($this->_table);
         $row = $query->result_array();
         return $row;
+    }
+
+    public function checkPlanName($planName, $projectId) {
+        $this->db->select('id, plan_name');
+        $this->db->where('plan_name', $planName);
+        $this->db->where('project_id', $projectId);
+        $this->db->where('status', 1);
+        $query = $this->db->get($this->_table);
+        $num = $query->num_rows();
+        return $num;
     }
 
     public function fetchOne($id, $string = NULL) {
@@ -42,6 +43,7 @@ class Model_plan extends CI_Model {
             $string = '*';
         $this->db->select($string);
         $this->db->where('id', $id);
+        $this->db->where('status', 1);
         $this->db->limit(1, 0);
         $query = $this->db->get($this->_table);
         if ($query->num_rows()) {
@@ -81,5 +83,16 @@ class Model_plan extends CI_Model {
         } else {
             return false;
         }
+    }
+
+    public function edit($id, $data) {
+        return $this->db->update($this->_table, $data, array('id' => $id));
+    }
+
+    /**
+     * 删除
+     */
+    public function del($id) {
+        return $this->db->update($this->_table, array('last_time' => time(), 'last_user' => $this->input->cookie('uids'), 'status' => '-1'), array('id' => $id));
     }
 }

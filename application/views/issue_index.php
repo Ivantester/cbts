@@ -83,15 +83,27 @@
               </div><!-- pull-right -->
               <?php } ?>
               <h5 class="subtitle mb5">任务列表</h5>
-              <p class="text-muted">查询结果：<?php echo $total;?></p>
+              <?php if (($total-$offset) < $per_page) { $per_page_end = $total-$offset; } else { $per_page_end = $per_page; }?>
+            <p class="text-muted">查询结果：<?php echo ($offset+1).' - '.($per_page_end+$offset).' of '.$total;?></p>
               <div class="table-responsive">
                 <table class="table table-email">
                   <tbody>
                     <?php
                       if ($rows) {
-                        if (file_exists('./cache/users.conf.php'))
-                            require './cache/users.conf.php';
-                        foreach ($rows as $value) {
+                        $weekarray=array("日","一","二","三","四","五","六");
+                      if (file_exists('./cache/users.conf.php'))
+                          require './cache/users.conf.php';
+                      foreach ($rows as $value) {
+                        $timeDay = date("Ymd", $value['add_time']);
+                        if (!isset($timeGroup[$timeDay])) {
+                          if ($timeDay == date("Ymd", time())) {
+                            $day = '<span style="color:green">今天</span>';
+                          } else {
+                            $day = date('Y-m-d', $value['add_time']).' 星期'.$weekarray[date("w",$value['add_time'])];
+                          }
+                          echo '<tr><td colspan="7"><span class="fa fa-calendar"></span> 创建时间：'.$day.'</td></tr>';
+                        }
+                        $timeGroup[$timeDay] = 1;
                     ?>
                     <tr class="unread">
                       <td>
@@ -121,7 +133,7 @@
                       <td align="center" width="30px">
                         <?php if ($value['type'] == 2) {?><i class="fa fa-bug tooltips" data-toggle="tooltip" title="BUG"></i><?php } ?><?php if ($value['type'] == 1) {?><i class="fa fa-magic tooltips" data-toggle="tooltip" title="TASK"></i><?php } ?>
                       </td>
-                      <td><?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/issue/view/<?php echo $value['id'];?>" target="_blank"><?php echo $value['issue_name'];?></a></span>
+                      <td><?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/issue/view/<?php echo $value['id'];?>" target="_blank"><?php if ($value['status'] == '-1') { echo '<del>'.$value['issue_name'].'</del>'; } else { echo $value['issue_name']; } ?></a><?php if ($value['status'] == '-1') echo ' <span class="label label-default">已删除</span>'; ?>
                       </td>
                       <td><span class="media-meta pull-right"><?php echo date("Y/m/d H:i", $value['add_time'])?></span></td>
                     </tr>

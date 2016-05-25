@@ -23,8 +23,8 @@
         
         <h5 class="subtitle">快捷方式</h5>
         <ul class="nav nav-pills nav-stacked nav-email mb20">
-          <li><a href="/bug/index/to_me"><i class="glyphicon glyphicon-folder-open"></i> 我负责的</a></li>
-          <li><a href="/bug/index/from_me"><i class="glyphicon glyphicon-folder-open"></i> 我创建的</a></li>
+          <li><a href="/bug/index/to_me"><i class="glyphicon glyphicon-folder-close"></i> 我负责的</a></li>
+          <li><a href="/bug/index/from_me"><i class="glyphicon glyphicon-folder-close"></i> 我创建的</a></li>
         </ul>
       </div><!-- col-sm-3 -->
       <div class="col-sm-9 col-lg-10">
@@ -145,7 +145,7 @@ function callBack(data) {
     });
     setTimeout(function(){
       location.href = data.url;
-    }, 2000);
+    }, 1000);
   } else {
     jQuery.gritter.add({
       title: '提醒',
@@ -202,6 +202,7 @@ jQuery(document).ready(function(){
     textarea : $('#content'),
     toolbar : toolbar,  //工具栏
     defaultImage : '/static/simditor-2.3.6/images/image.png', //编辑器插入图片时使用的默认图片
+    pasteImage: true,
     upload: {
         url: '/admin/upload',
         params: {'<?php echo $this->security->get_csrf_token_name();?>':'<?php echo $this->security->get_csrf_hash();?>'}, //键值对,指定文件上传接口的额外参数,上传的时候随文件一起提交  

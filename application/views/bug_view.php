@@ -33,15 +33,33 @@
                 <div class="panel panel-default">
                     <div class="panel-body">
                         <div class="pull-right">
-                            <?php if ($row['state'] == '0' && ($this->input->cookie('uids') == $row['accept_user'])) {?>
+                            <?php if ($row['status'] == 1 && $row['state'] == '0' && ($this->input->cookie('uids') == $row['accept_user'])) {?>
                             <div class="btn-group mr10">
                                 <button class="btn btn-sm btn-primary tooltips" type="button" title="确认BUG，你可以调整严重级别" id="checkin" ids="<?php echo $row['id'];?>" data-toggle="modal" data-target="#myModal">确认BUG</button>
                                 <button class="btn btn-sm btn-primary tooltips" type="button" title="如果BUG反馈无效，请说明理由" id="checkout" data-toggle="modal" data-target="#myModal2">无效反馈</button>
                             </div>
                             <?php }?>
-                            <?php if ($row['state'] == 1) { ?>
+                            <?php if ($row['status'] == 1 && $row['state'] == 1 && ($row['add_user'] == $this->input->cookie('uids') || $row['accept_user'] == $this->input->cookie('uids'))) { ?>
                             <div class="btn-group mr10">
-                                <button class="btn btn-sm btn-primary" type="button" id="over" ids="<?php echo $row['id'];?>">已修复</button>
+                                <button class="btn btn-sm btn-primary" type="button" id="over" ids="<?php echo $row['id'];?>">已处理</button>
+                            </div>
+                            <?php } ?>
+
+                            <?php if ($row['state'] == 3 && $row['add_user'] == $this->input->cookie('uids')) { ?>
+                            <div class="btn-group mr10">
+                                <button class="btn btn-sm btn-primary" type="button" id="return" ids="<?php echo $row['id'];?>">通过回归</button>
+                            </div>
+                            <?php } ?>
+
+                            <?php if ($row['status'] == 1 && ($row['add_user'] == $this->input->cookie('uids') || $row['accept_user'] == $this->input->cookie('uids'))) { ?>
+                            <div class="btn-group mr10">
+                                <button class="btn btn-sm btn-white" type="button" id="close" ids="<?php echo $row['id'];?>"><i class="fa fa-power-off"></i> 关闭此BUG</button>
+                            </div>
+                            <?php } ?>
+
+                            <?php if ($row['status'] == 0 && ($row['add_user'] == $this->input->cookie('uids') || $row['accept_user'] == $this->input->cookie('uids'))) { ?>
+                            <div class="btn-group mr10">
+                                <button class="btn btn-sm btn-white" type="button" id="open" ids="<?php echo $row['id'];?>"><i class="fa fa-power-off"></i> 重新打开</button>
                             </div>
                             <?php } ?>
 
@@ -64,10 +82,19 @@
                             </div>
                             <div class="media-body">
                               <span class="media-meta pull-right"><?php echo friendlydate($row['add_time']);?></span>
-                              <h4 class="text-primary"><?php echo $users[$row['add_user']]['realname'];?></h4>
+                              <h4 class="text-primary"><?php echo $users[$row['add_user']]['realname'];?> 把这个BUG指派给了 <?php if ($row['status'] == 1 && ($row['add_user'] == $this->input->cookie('uids') || $row['accept_user'] == $this->input->cookie('uids'))) { ?><a href="javascript:;" id="country" data-type="select2" data-value="<?php echo $row['accept_user'];?>" data-title="更改受理人"></a><?php } else { echo $users[$row['accept_user']]['realname']; } ?></h4>
                               <small class="text-muted">BUG反馈人</small>
-                              <h4 class="email-subject">
-                                <?php if ($row['status'] == 1) {?>
+                              <h4 class="email-subject" style="font-size:18px;">
+                              <?php if ($row['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$row['level']]['alt']."'>".$level[$row['level']]['name']."</strong> ";?><?php } ?><?php echo $row['subject'];?>
+                              <?php
+                                if ($row['status'] == 1) {
+                                  echo '<span class="label label-info">开启</span>';
+                                } elseif ($row['status'] == 0) {
+                                  echo '<span class="label label-default">关闭</span>';
+                                }elseif ($row['status'] == '-1') {
+                                  echo '<span class="label label-default">删除</span>';
+                                }
+                                ?>
                                 <?php if ($row['state'] === '-1') {?>
                                 <span class="label label-default">无效反馈</span>
                                 <?php } ?>
@@ -81,16 +108,14 @@
                                 <span class="label label-warning">处理中</span>
                                 <?php } ?>
                                 <?php if ($row['state'] === '3') {?>
-                                <span class="label label-success">已处理</span>
+                                <span class="label label-info">已处理</span>
                                 <?php } ?>
-                                <?php } elseif ($row['status'] == 0) {?>
-                                <span class="label label-default">已关闭</span>
-                                <?php } elseif ($row['status'] == -1) {?>
-                                <span class="label label-default">已删除</span>
+                                <?php if ($row['state'] === '5') {?>
+                                <span class="label label-success">通过回归</span>
                                 <?php } ?>
-                              <?php if ($row['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$row['level']]['alt']."'>".$level[$row['level']]['name']."</strong> ";?><?php } ?><?php echo $row['subject'];?></h4>
+                              </h4>
                               <p><?php echo $row['content'];?></p>
-                              <p>所属任务：<a href="/issue/view/<?php echo $issue['id'];?>" target="_blank"><?php echo $issue['issue_name'];?></a></p>
+                              <p>所属任务：<a href="/issue/view/<?php echo $issue['id'];?>"><?php echo $issue['issue_name'];?></a></p>
                             </div>
                           </div>
                           <?php if ($row['state'] >=1) {?><div align="center"><span class="badge"><?php echo $users[$row['accept_user']]['realname'].' 已在 '.date("Y-m-d H:i:s", $row['check_time']).' 确认了这个BUG是有效的';?></span></div><?php } ?>
@@ -104,11 +129,12 @@
                               <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$value['add_user']]['username']?>.jpg" align="absmiddle" title="<?php echo $users[$value['add_user']]['realname'];?>"></div>
                             </div>
                             <div class="media-body">
-                              <span class="media-meta pull-right"><?php echo friendlydate($value['add_time']);?><?php if ($value['add_user'] == $this->input->cookie('uids')) {?><br /><a class="del" ids="<?php echo $value['id'];?>" href="javascript:;">删除</a></span><?php } ?>
+                              <span class="media-meta pull-right"><?php echo friendlydate($value['add_time']);?><?php if ($value['add_user'] == $this->input->cookie('uids') && (time() - $value['add_time']) < 3600) {?><br /><a class="del" ids="<?php echo $value['id'];?>" href="javascript:;">删除</a><?php } ?></span>
                               <h4 class="text-primary"><?php echo $users[$value['add_user']]['realname'];?></h4>
-                              <small class="text-muted">路人甲</small>
-                              <p><?php echo $value['content'];?></p>
+                              <small class="text-muted"><?php if ($row['add_user'] == $value['add_user']) { echo 'BUG反馈人'; } elseif ($row['accept_user'] == $value['add_user']) { echo 'BUG受理人'; } else { echo '路人甲'; } ?></small>
+                              <div><?php echo html_entity_decode($value['content']);?></div>
 							  
+                          </div>
                           </div>
                           <?php
                               }
@@ -120,10 +146,13 @@
                               <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$this->input->cookie('uids')]['username']?>.jpg" align="absmiddle" title="<?php echo $users[$this->input->cookie('uids')]['realname'];?>"></div>
                             </div>
                             <div class="media-body">
-                              <textarea id="content" name="content"></textarea>
-                              <div class="mb10"></div>
-                              <input type="hidden" value="<?php echo $row['id'];?>" id="bug_id" name="bug_id">
-                              <button class="btn btn-primary" id="btnSubmit">提交</button>
+                              <input type="text" class="form-control" id="post-commit" placeholder="我要发表评论">
+                              <div id="simditor" style="display:none;">
+                                <textarea id="content" name="content"></textarea>
+                                <div class="mb10"></div>
+                                <input type="hidden" value="<?php echo $row['id'];?>" id="bug_id" name="bug_id">
+                                <button class="btn btn-primary" id="btnSubmit">提交</button>
+                              </div>
                             </div>
                           </div>
                         </div><!-- read-panel -->
@@ -202,7 +231,9 @@
 <script src="/static/js/jquery.cookies.js"></script>
 
 <script src="/static/js/jquery.datatables.min.js"></script>
+<script src="/static/js/simple-pinyin.js"></script>
 <script src="/static/js/select2.min.js"></script>
+<script src="/static/js/bootstrap-editable.min.js"></script>
 <script src="/static/js/jquery.gritter.min.js"></script>
 
 <script src="/static/js/custom.js"></script>
@@ -216,6 +247,7 @@ $(function(){
     textarea : $('#content'),
     toolbar : toolbar,  //工具栏
     defaultImage : '/static/simditor-2.3.6/images/image.png', //编辑器插入图片时使用的默认图片
+    pasteImage: true,
     upload: {
         url: '/admin/upload',
         params: {'<?php echo $this->security->get_csrf_token_name();?>':'<?php echo $this->security->get_csrf_hash();?>'}, //键值对,指定文件上传接口的额外参数,上传的时候随文件一起提交  
@@ -227,6 +259,7 @@ $(function(){
 
   $("#btnSubmit").click(function(){
     content = $("#content").val();
+    content = htmlEncode(content);
     bug_id = $("#bug_id").val();
     if (!content) {
       editor.focus();
@@ -239,7 +272,7 @@ $(function(){
       dataType: "JSON",
       success: function(data){
         if (data.status) {
-          $("#box").append('<div class="media"><div class="pull-left"><div class="face"><img alt="" src="/static/avatar/'+data.message.username+'.jpg" align="absmiddle" title="'+data.message.realname+'"></div></div><div class="media-body"><span class="media-meta pull-right">'+data.message.addtime+'</span><h4 class="text-primary">'+data.message.realname+'</h4><small class="text-muted">路人甲</small><p>'+data.message.content+'</p></div></div>');
+          $("#box").append('<div class="media"><div class="pull-left"><div class="face"><img alt="" src="/static/avatar/'+data.message.username+'.jpg" align="absmiddle" title="'+data.message.realname+'"></div></div><div class="media-body"><span class="media-meta pull-right">'+data.message.addtime+'</span><h4 class="text-primary">'+data.message.realname+'</h4><small class="text-muted">'+data.message.role+'</small><p>'+data.message.content+'</p></div></div>');
           editor.setValue('');
         } else {
           alert('fail');
@@ -247,6 +280,29 @@ $(function(){
       }
     });
   });
+
+  // Select 2 (dropdown mode)
+  var countries = [];
+  $.each({<?php foreach($users as $val) { ?>"<?php echo $val['uid'];?>": "<?php echo $val['realname'];?>",<?php } ?> }, function(k, v) {
+      countries.push({id: k, text: v});
+  });
+
+  jQuery('#country').editable({
+        inputclass: 'sel-xs',
+        source: countries,
+        type: 'text',
+        pk: 1,
+        ajaxOptions: {
+          type: 'GET'
+        },
+        url: '/bug/change_accept/<?php echo $row["id"];?>',
+        send: 'always',
+        select2: {
+            width: 150,
+            placeholder: '更改受理人',
+            allowClear: true
+        },
+    });
 
   $(".del").click(function(){
     var c = confirm('你确定要删除吗？');
@@ -279,7 +335,26 @@ $(function(){
           dataType: "JSON",
           success: function(data){
             if (data.status) {
-              tip(data.message, '/bug/view/'+id, 'success', 2000);
+              tip(data.message, '/bug/view/'+id, 'success', 1000);
+            } else {
+              alert('fail');
+            } 
+          }
+        });
+      }
+  });
+
+  $("#return").click(function(){
+    var c = confirm('你确定要已经回归测试了此BUG吗？');
+      if(c) {
+        id = $(this).attr("ids");
+        $.ajax({
+          type: "GET",
+          url: "/bug/returnbug/"+id,
+          dataType: "JSON",
+          success: function(data){
+            if (data.status) {
+              tip(data.message, '/bug/view/'+id, 'success', 1000);
             } else {
               alert('fail');
             } 
@@ -297,7 +372,7 @@ $(function(){
       url: "/bug/checkin/"+bug_id+"/"+level,
       success: function(data){
         if (data.status) {
-          location.href = '/bug/view/'+bug_id;
+          tip(data.message, '/bug/view/'+bug_id, 'success', 1000);
         } else {
           alert('fail');
         } 
@@ -307,7 +382,11 @@ $(function(){
 
   //反馈无效
   $(".ajax-btn2").click(function(){
-    content = $('#msg').val();
+    content = $.trim($('#msg').val());
+    if (!content) {
+      alert('请说明反馈无效的理由');
+      return false;
+    }
     bug_id = $("#bug_id").val();
     $.ajax({
       type: "POST",
@@ -316,13 +395,18 @@ $(function(){
       data: "content="+content+"&bug_id="+bug_id+"&<?php echo $this->security->get_csrf_token_name();?>=<?php echo $this->security->get_csrf_hash();?>",
       success: function(data){
         if (data.status) {
-          location.href = '/bug/view/'+bug_id;
+          tip(data.message, '/bug/view/'+bug_id, 'success', 1000);
         } else {
           alert('fail');
         } 
       }
     });
   });
+
+  $('#post-commit').click(function () {
+      $(this).hide();
+      $('#simditor').show();
+    });
 
   //返回上一页面
   $("#back").click(function(){
@@ -343,9 +427,47 @@ $(function(){
         url: "/bug/del/"+id,
         success: function(data){
           if (data.status) {
-            location.href = '/bug/view/'+id;
+            tip(data.message, '/bug/view/'+id, 'success', 1000);
           } else {
             alert('fail');
+          } 
+        }
+      });
+    }
+  });
+
+  $("#close").click(function(){
+    var c = confirm("确认要关闭吗？");
+    if(c) {
+      id = $(this).attr("ids");
+      $.ajax({
+        type: "GET",
+        dataType: "JSON",
+        url: "/bug/close/"+id,
+        success: function(data){
+          if (data.status) {
+            tip(data.message, '/bug/view/'+id, 'success', 1000);
+          } else {
+            alert(data.message);
+          } 
+        }
+      });
+    }
+  });
+
+  $("#open").click(function(){
+    var c = confirm("确认要重新打开吗？");
+    if(c) {
+      id = $(this).attr("ids");
+      $.ajax({
+        type: "GET",
+        dataType: "JSON",
+        url: "/bug/open/"+id,
+        success: function(data){
+          if (data.status) {
+            tip(data.message, '/bug/view/'+id, 'success', 1000);
+          } else {
+            alert(data.message);
           } 
         }
       });
@@ -356,6 +478,32 @@ $(function(){
   jQuery(".select2").select2({
     width: '100%',
     minimumResultsForSearch: -1
+  });
+
+  //图片等比例缩放
+  $('.media-body img').each(function() {  
+    $(this).css({"cursor":"pointer"});
+    var maxWidth =$(".media-body").width();
+    var maxHeight =1500;  
+    var ratio = 0; 
+    var width = $(this).width();  
+    var height = $(this).height();  
+    if(width > maxWidth){    
+      ratio = maxWidth / width;   
+      $(this).css("width", maxWidth);    
+      height = height * ratio;   
+      $(this).css("height", height);  
+    } 
+    if(height > maxHeight){    
+      ratio = maxHeight / height;  
+      $(this).css("height", maxHeight);  
+      width = width * ratio;   
+      $(this).css("width", width); 
+    }
+  });
+
+  $('.media-body img').click(function() {
+    window.open($(this).attr('src'));  
   });
 
 });

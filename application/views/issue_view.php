@@ -89,7 +89,7 @@
                 <?php if ($row['workflow']  == 1 && $row['accept_user'] == $this->input->cookie('uids')) {?>
                 <td style="text-align:center;" width="200px" id="td-over">
                   <a href="/test/add/<?php echo $row['id'];?>" class="label label-danger" target="_blank">提交代码</a> 
-                  <a href="javascript:;" ids="<?php echo $row['id']; ?>" class="label label-primary over">提交完毕</a>
+                  <a href="javascript:;" ids="<?php echo $row['id']; ?>" class="label label-primary over">开发完毕</a>
                 </td>
                 <?php } else {?>
                 <td style="text-align:center;">开发完毕</td>
@@ -165,20 +165,32 @@
           <h5 class="subtitle subtitle-lined">描述</h5>
           <p><?php echo $row['issue_summary'];?></p>
           <br />
+          <div align="right">
+          <?php if (($row['workflow'] == 1 || $row['workflow'] == 3) && isset($acceptUsers['2']) && $acceptUsers['2']['accept_user'] != $this->input->cookie('uids')) { ?>
+          <a href="/test/add/<?php echo $row['id'];?>" class="label label-danger">其他人可以点击此处提交代码</a>
+          <?php } ?>
+          <?php if (($row['workflow'] >=3 && $row['workflow'] <= 5) && isset($acceptUsers['3']) && $acceptUsers['3']['accept_user'] != $this->input->cookie('uids')) { ?>
+           <a href="/bug/add/<?php echo $row['id'];?>" class="label label-danger">其他人可以点击此处反馈BUG</a>
+          <?php } ?>
+          </div>
           <h5 class="subtitle subtitle-lined">开发信息 <span class="badge badge-info"><?php echo $total_rows;?></span></h5>
-          <div class="table-responsive">
-            <table class="table table-hover table-striped">
+          <div class="table-responsive mb30">
+            <table class="table table-email">
               <tbody>
                 <?php
                   if ($test) {
                     foreach ($test as $value) {
+                      if (!isset($timeGroup[$value['repos_id']])) {
+                        $timeGroup[$value['repos_id']] = 1;
+                        echo '<tr><td colspan="8"><span class="fa fa-cloud-upload"></span> '.$repos[$value['repos_id']]['repos_name'].'</td></tr>';
+                      }
                 ?>
-                <tr id="tr-<?php echo $value['id'];?>">
-                 <td><?php echo $value['id'];?></td>
-                  <td><?php if ($value['status'] == '-1') { echo '<s><a title="'.$repos[$value['repos_id']]['repos_url'].'" href="/test/repos/'.$value['repos_id'].'">'.$repos[$value['repos_id']]['repos_name'].'</a></s>'; } else { echo '<a title="'.$repos[$value['repos_id']]['repos_url'].'" href="/test/repos/'.$value['repos_id'].'">'.$repos[$value['repos_id']]['repos_name'].'</a>'; }?></span>
+                <tr id="tr-<?php echo $value['id'];?>" class="unread">
+                  <td><a href="/conf/profile/<?php echo $value['add_user'];?>" class="pull-left"><div class="face"><img alt="" src="/static/avatar/<?php echo $users[$value['add_user']]['username']?>.jpg" align="absmiddle" title="添加人：<?php echo $users[$value['add_user']]['realname'];?>"></div></a></td>
+                  <td></td>
+                  <td><?php if ($value['status'] == '-1') { echo '<s><a title="'.$repos[$value['repos_id']]['repos_url'].'" href="/test/repos/'.$value['repos_id'].'">'.$repos[$value['repos_id']]['repos_name'].'</a></s>'; } else { echo '<a title="'.$repos[$value['repos_id']]['repos_url'].'" href="/test/repos/'.$value['repos_id'].'">'.$repos[$value['repos_id']]['repos_name'].'</a>'; }?> @<?php echo $value['test_flag'];?><?php if ($timeGroup[$value['repos_id']] == 1) { echo ' <span class="badge badge-danger">当前</span>'; } ?>
                   </td>
-                  <td>@<?php echo $value['test_flag'];?></td>
-                  <td>
+                  <td width="120">
                     <?php if ($value['rank'] == 0) {?>
                     <button class="btn btn-default btn-xs"><i class="fa fa-coffee"></i> 开发环境</button>
                     <?php } ?>
@@ -189,7 +201,7 @@
                     <button class="btn btn-success btn-xs"><i class="fa fa-check-circle"></i> 生产环境</button>
                     <?php } ?>
                   </td>
-                  <td>
+                  <td width="90">
                     <?php if ($value['state'] == 0) {?>
                     <button class="btn btn-default btn-xs"><i class="fa fa-coffee"></i> 待测</button>
                     <?php } ?>
@@ -206,34 +218,54 @@
                     <button class="btn btn-success btn-xs"><i class="fa fa-exclamation-circle"></i> 已被后续版本覆盖</button>
                     <?php } ?>
                   </td>
-                  <td class="table-action">
+                  <td width="240">
                     <?php if ($value['status'] == 1) {?>
-                    <div class="btn-group">
-                      <button type="button" class="btn btn-xs btn-primary">更改提测状态</button>
-                      <button type="button" class="btn btn-xs btn-primary dropdown-toggle" data-toggle="dropdown">
-                        <span class="caret"></span>
-                        <span class="sr-only">Toggle Dropdown</span>
-                      </button>
-                      <ul class="dropdown-menu" role="menu">
-                        <li><a href="javascript:;" class="wait" testid="<?php echo $value['id']?>">我暂时不测了</a></li>
-                        <li><a href="javascript:;" class="zhanyong" testid="<?php echo $value['id']?>">我要占用测试环境</a></li>
-                        <li><a href="javascript:;" class="pass" testid="<?php echo $value['id']?>">测试不通过</a></li>
-                        <li><a href="javascript:;" class="launch" testid="<?php echo $value['id']?>">测试通过待上线</a></li>
-                        <li><a href="javascript:;" class="online" testid="<?php echo $value['id']?>">代码已上线</a></li>
-                      </ul>
+                    <div class="btn-group nomargin">
+                      <div class="btn-group nomargin">
+                        <button type="button" class="btn btn-white btn-sm dropdown-toggle" data-toggle="dropdown">
+                          更改提测状态 <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li><a href="javascript:;" class="wait" testid="<?php echo $value['id']?>">我暂时不测了</a></li>
+                          <li><a href="javascript:;" class="zhanyong" testid="<?php echo $value['id']?>">我要占用测试环境</a></li>
+                          <li><a href="javascript:;" class="pass" testid="<?php echo $value['id']?>">测试不通过</a></li>
+                          <li><a href="javascript:;" class="launch" testid="<?php echo $value['id']?>">测试通过待上线</a></li>
+                          <li><a href="javascript:;" class="online" testid="<?php echo $value['id']?>">代码已上线</a></li>
+                        </ul>
+                      </div>
+                      <div class="btn-group nomargin">
+                        <button type="button" class="btn btn-white btn-sm dropdown-toggle" data-toggle="dropdown">
+                          获取部署代码 <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li><a href="javascript:;" class="deploy" env="192.168.8.190" br="<?php echo str_replace('branches/', '', $value['br']);?>" rev="<?php echo $value['test_flag'];?>" repos="<?php echo $repos[$value['repos_id']]['repos_name'];?>" merge="<?php echo $repos[$value['repos_id']]['merge']?>" ids="<?php echo $value['id']?>">190（测试环境01）</a></li>
+                          <li><a href="javascript:;" class="deploy" env="192.168.8.192" br="<?php echo str_replace('branches/', '', $value['br']);?>" rev="<?php echo $value['test_flag'];?>" repos="<?php echo $repos[$value['repos_id']]['repos_name'];?>" merge="<?php echo $repos[$value['repos_id']]['merge']?>" ids="<?php echo $value['id']?>">192（测试环境02）</a></li>
+                          <li><a href="javascript:;" class="deploy" env="192.168.8.193" br="<?php echo str_replace('branches/', '', $value['br']);?>" rev="<?php echo $value['test_flag'];?>" repos="<?php echo $repos[$value['repos_id']]['repos_name'];?>" merge="<?php echo $repos[$value['repos_id']]['merge']?>" ids="<?php echo $value['id']?>">193（测试环境03）</a></li>
+                        </ul>
+                      </div>
                     </div>
-                    <button class="btn btn-white btn-xs deploy" ids="<?php echo $value['id'];?>">查看部署代码</button>
+                    </div>
+                    <?php }?>
+                  </td>
+                  <td width="150">
                     <?php if ($row['status'] == 1) {?>
                     <?php if ($value['tice'] < 1) {?>
                     <a class="btn btn-white btn-xs" href="/test/edit/<?php echo $row['id'];?>/<?php echo $value['id'];?>"><i class="fa fa-pencil"></i> 编辑</a>
                     <a class="btn btn-white btn-xs delete-row" href="javascript:;" issueid="<?php echo $row['id'];?>" testid="<?php echo $value['id'];?>"><i class="fa fa-trash-o"></i> 删除</a>
                     <?php }?>
                     <?php }?> 
-                    <?php }?>
                   </td>
+                  <td width="140"><span class="media-meta pull-right"><?php echo date("Y/m/d H:i", $value['add_time'])?></span></td>
                 </tr>
-                <tr><td colspan="6" style="padding-left:0px;padding-right:0px;"><div class="abc" id="deploy-<?php echo $value['id'];?>"><?php $text = ''; if($repos[$value['repos_id']]['merge'] == 1) { $text = "cd ~/cap_scripts/" . $repos[$value['repos_id']]['repos_name'] . "/ && cap staging deploy br=" . $value['br'] . " rev=" . $value['test_flag'] . " issue=" . $row['id'];}elseif($value['repos_id'] == 42){$text = "cd ~/cap_scripts/" . $repos[$value['repos_id']]['repos_name'] . "/ && cap staging deploy rev=" . $value['test_flag'] . " issue=" . $row['id'];} if(isset($text) && !empty($text)){echo "<input type='text' value='" . $text . "'  class=\"form-control\">"; } ?></div><?php if ($value['test_summary']) { ?><div style="padding:10px;line-height:1.2em"><blockquote style="font-size:14px;"><i class="fa fa-quote-left"></i><p><?php echo $value['test_summary']; ?></p><small><?php echo $users[$value['add_user']]['realname']; ?>：提测 <?php echo $repos[$value['repos_id']]['repos_name']; ?> 的注意事项</cite></small></blockquote></div><?php } ?></td></tr>
+                <tr id="abc-<?php echo $value['id'];?>" style="display:none;">
+                  <td colspan="8" id="deploy-<?php echo $value['id'];?>" curr="0"><input type="text" class="form-control input-sm">
+                  <small>提醒：可以使用快捷键 <code>Ctrl+C</code> 将部署代码复制到剪切板上</small></td>
+                </tr>
+                <?php if ($value['test_summary']) { ?>
+                <tr><td colspan="8" style="background-color:#fff"><div style="padding:10px;line-height:1.2em"><blockquote style="font-size:14px;"><i class="fa fa-quote-left"></i><p><?php echo $value['test_summary']; ?></p><small><?php echo $users[$value['add_user']]['realname']; ?>：提测 <?php echo $repos[$value['repos_id']]['repos_name']; ?> 的注意事项</cite></small></blockquote></div></td></tr>
+                <?php } ?>
                 <?php
+                    $timeGroup[$value['repos_id']]++;
                     }
                   } else {
                 ?>
@@ -269,11 +301,17 @@
                 <td><?php if ($plan) { echo '<a href="/plan?planId='.$plan['id'].'" target="_blank">'.$plan['plan_name'].'</a>'; }?></td>
                 <td width="120px">贡献者</td>
                 <td>
-                  <?php if ($acceptUsers) {
+                  <?php
+                  if ($acceptUsers) {
                     foreach ($acceptUsers as $key => $value) {
-                      echo ' <a href="/conf/profile/'.$value['accept_user'].'">'.$users[$value['accept_user']]['realname'].'</a>';
+                      $acceptUsersDup[] = $value['accept_user'];
                     }
-                  }?>
+                    $acceptUsersDup = array_unique($acceptUsersDup);
+                    foreach ($acceptUsersDup as $key => $value) {
+                      echo ' <a href="/conf/profile/'.$value.'">'.$users[$value]['realname'].'</a>';
+                    }
+                  }
+                  ?>
                 </td>
               </tr>
               <tr>
@@ -299,7 +337,7 @@
           </table>
           </div><!-- table-responsive -->
           <?php if ($bug_total_rows) {?>
-          <h5 class="subtitle subtitle-lined">发现的BUG</h5>
+          <h5 class="subtitle subtitle-lined">发现的BUG  <span class="badge badge-info"><?php echo $bug_total_rows;?></span></h5>
           <div class="table-responsive">
             <table class="table table-striped">
               <tbody>
@@ -308,27 +346,49 @@
                     foreach ($bug as $value) {
                 ?>
                   <tr>
-                    <td width="50px"><?php echo $value['id']?></td>
-                    <td width="50px"><i class="fa fa-bug tooltips" data-toggle="tooltip" title="Bug"></i></td>
                     <td width="50px">
-                      <a href="/conf/profile/<?php echo $value['accept_user'];?>" class="pull-left" target="_blank">
-                        <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$value['accept_user']]['username']?>.jpg" align="absmiddle" title="当前受理人：<?php echo $users[$value['accept_user']]['realname'];?>"></div>
+                      <?php
+                      if ($value['status'] == 1) {
+                        echo '<span class="label label-info">开启</span>';
+                      } elseif ($value['status'] == 0) {
+                        echo '<span class="label label-default">关闭</span>';
+                      }elseif ($value['status'] == '-1') {
+                        echo '<span class="label label-default">删除</span>';
+                      }
+                      ?>
+                    </td>
+                    <td width="30px"><i class="fa fa-bug tooltips" data-toggle="tooltip" title="Bug"></i></td>
+                    <td width="50px">
+                      <a href="/conf/profile/<?php echo $value['add_user'];?>" class="pull-left" target="_blank">
+                        <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$value['add_user']]['username']?>.jpg" align="absmiddle" title="反馈人：<?php echo $users[$value['add_user']]['realname'];?>"></div>
                       </a>
                     </td>
-                    <td><?php if ($value['level']) { ?><?php echo "<strong style='color:#ff0000;'>".$level[$value['level']]['name']."</strong> ";?><?php } ?><a href="/bug/view/<?php echo $value['id'];?>" target="_blank"><?php echo $value['subject']?></a></td>
+                    <td width="50px">
+                      <a href="/conf/profile/<?php echo $value['accept_user'];?>" class="pull-left" target="_blank">
+                        <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$value['accept_user']]['username']?>.jpg" align="absmiddle" title="受理人：<?php echo $users[$value['accept_user']]['realname'];?>"></div>
+                      </a>
+                    </td>
+                    <td><?php if ($value['level']) { ?><?php echo "<strong style='color:#ff0000;'>".$level[$value['level']]['name']."</strong> ";?><?php } ?><a href="/bug/view/<?php echo $value['id'];?>"><?php echo $value['subject']?></a></td>
                     
-                    <td width="80px"><?php if ($value['state'] === '0') {?>
-                    <span class="label label-default">未确认</span>
-                    <?php } ?>
-                    <?php if ($value['state'] === '1') {?>
-                    <span class="label label-primary">处理中</span>
-                    <?php } ?>
-                    <?php if ($value['state'] === '3') {?>
-                    <span class="label label-success">已处理</span>
-                    <?php } ?>
-                    <?php if ($value['state'] === '-1') {?>
-                    <span class="label label-default">反馈无效</span>
-                    <?php } ?>
+                    <td width="80px">
+                      <?php if ($value['state'] === '0') {?>
+                      <span class="label label-default">未确认</span>
+                      <?php } ?>
+                      <?php if ($value['state'] === '1') {?>
+                      <span class="label label-primary">已确认</span>
+                      <?php } ?>
+                      <?php if ($value['state'] === '2') {?>
+                      <span class="label label-primary">已确认</span>
+                      <?php } ?>
+                      <?php if ($value['state'] === '3') {?>
+                      <span class="label label-info">已处理</span>
+                      <?php } ?>
+                      <?php if ($value['state'] === '5') {?>
+                      <span class="label label-success">通过回归</span>
+                      <?php } ?>
+                      <?php if ($value['state'] === '-1') {?>
+                      <span class="label label-default">无效反馈</span>
+                      <?php } ?>
                     </td>
                   </tr>
                   <?php
@@ -358,7 +418,7 @@
               <span class="media-meta pull-right"><?php echo friendlydate($value['add_time']);?><?php if ($value['add_user'] == $this->input->cookie('uids')) {?><br /><a class="del" ids="<?php echo $value['id'];?>" href="javascript:;">删除</a><?php } ?></span>
               <h6 class="text-muted"><?php echo $users[$value['add_user']]['realname'];?></h6>
               <small class="text-muted"><?php if ($value['add_user'] == $row['accept_user']) { echo '当前受理人'; } else { echo '路人甲'; }?></small>
-              <p><?php echo $value['content'];?></p>
+              <p><?php echo html_entity_decode($value['content']);?></p>
             </div>
           </div>
           <?php
@@ -371,10 +431,13 @@
               <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$this->input->cookie('uids')]['username']?>.jpg" align="absmiddle" title="<?php echo $users[$this->input->cookie('uids')]['realname'];?>"></div>
             </div>
             <div class="media-body">
-              <textarea id="content" name="content"></textarea>
-              <div class="mb10"></div>
-              <input type="hidden" value="<?php echo $row['id'];?>" id="issue_id" name="issue_id">
-              <button class="btn btn-primary" id="btnSubmit">提交</button>
+              <input type="text" class="form-control" id="post-commit" placeholder="我要发表评论">
+              <div id="simditor" style="display:none;">
+                <textarea id="content" name="content"></textarea>
+                <div class="mb10"></div>
+                <input type="hidden" value="<?php echo $row['id'];?>" id="issue_id" name="issue_id">
+                <button class="btn btn-primary" id="btnSubmit">提交</button>
+              </div>
             </div>
           </div>
         </div><!-- row -->  
@@ -498,6 +561,11 @@
   }
 
   $(document).ready(function(){
+
+    $('#post-commit').click(function () {
+      $(this).hide();
+      $('#simditor').show();
+    });
 
     $('#deadline').countdown('<?php echo date("Y-m-d H:i", $row['deadline']);?>', function(event) {
       $(this).html(event.strftime('%D days %H:%M:%S'));
@@ -926,6 +994,7 @@ $(function(){
     textarea : $('#content'),
     toolbar : toolbar,  //工具栏
     defaultImage : '/static/simditor-2.3.6/images/image.png', //编辑器插入图片时使用的默认图片
+    pasteImage: true,
     upload: {
         url: '/admin/upload',
         params: {'<?php echo $this->security->get_csrf_token_name();?>':'<?php echo $this->security->get_csrf_hash();?>'}, //键值对,指定文件上传接口的额外参数,上传的时候随文件一起提交  
@@ -937,6 +1006,7 @@ $(function(){
 
   $("#btnSubmit").click(function(){
     content = $("#content").val();
+    content = htmlEncode(content);
     issue_id = $("#issue_id").val();
     if (!content) {
       editor.focus();
@@ -1015,13 +1085,34 @@ $(function(){
 
   $('.deploy').click(function(){
     var id = $(this).attr('ids');
+    var env = $(this).attr('env');
+    var repos = $(this).attr('repos');
+    var br = $(this).attr('br');
+    var rev = $(this).attr('rev');
     var obj = "#deploy-"+id;
-    if(!$(obj).hasClass('open')) {
-
-      $(obj).addClass('open');
+    var curr = $(obj).attr('curr');
+    $(obj).attr('curr', env);
+    var merge = $(this).attr('merge');
+    if (merge == 1) {
+      var cap = "cd ~/"+env+"/"+repos+"/ && cap staging deploy br="+br+" rev="+rev+" issue=<?php echo $row['id']; ?>";
+    } else if (repos == 'gc.style-conf') {
+      var cap = "cd ~/"+env+"/"+repos+"/ && cap staging deploy rev="+rev+" issue=<?php echo $row['id']; ?>";
+    } else {
+      var cap = '此代码库不适合使用capistrano部署，请使用CAP部署';
     }
-    else
-      $(obj).removeClass('open');
+    
+    $(obj+' input').val(cap).select();
+    if(!$(obj).hasClass('open')) {
+      $("#abc-"+id).show();
+      $(obj).addClass('open');
+      $(obj+' input').select();
+    } else {
+      if (curr == env) {
+        $("#abc-"+id).hide();
+        $(obj).removeClass('open');
+        $("#abc-"+id).css({"display":"none"});
+      }
+    }
     return false;
   });
 
@@ -1179,6 +1270,8 @@ function tip(message, url, color, sec) {
     location.href = url;
   }, sec);
 }
+
+
 </script>
 
 </body>

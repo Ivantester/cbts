@@ -72,7 +72,20 @@
                 <tbody>
                   <?php
                     if ($rows) {
+                      $weekarray=array("日","一","二","三","四","五","六");
+                      if (file_exists('./cache/users.conf.php'))
+                          require './cache/users.conf.php';
                       foreach ($rows as $value) {
+                        $timeDay = date("Ymd", $value['add_time']);
+                        if (!isset($timeGroup[$timeDay])) {
+                          if ($timeDay == date("Ymd", time())) {
+                            $day = '<span style="color:green">今天</span>';
+                          } else {
+                            $day = date('Y-m-d', $value['add_time']).' 星期'.$weekarray[date("w",$value['add_time'])];
+                          }
+                          echo '<tr><td colspan="7"><span class="fa fa-calendar"></span> 创建时间：'.$day.'</td></tr>';
+                        }
+                        $timeGroup[$timeDay] = 1;
                   ?>
                   <tr class="unread">
                     <td>
@@ -84,13 +97,28 @@
                     <td>
                       <a href="javascript:;" bugid="<?php echo $value['id'];?>" class="star<?php if ($this->uri->segment(2, '') == 'star') { echo ' star-checked'; } else { if (isset($star[$value['id']])) echo ' star-checked'; }?>"><i class="glyphicon glyphicon-star"></i></a>
                     </td>
+                    <td width="50px">
+                      <a href="/conf/profile/<?php echo $value['add_user'];?>" class="pull-left" target="_blank">
+                        <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$value['add_user']]['username']?>.jpg" align="absmiddle" title="反馈人：<?php echo $users[$value['add_user']]['realname'];?>"></div>
+                      </a>
+                    </td>
                     <td width="40px">
                       <a href="#" class="pull-left">
                         <div class="face"><img alt="" src="/static/avatar/<?php echo $users[$value['accept_user']]['username']?>.jpg" align="absmiddle" title="处理人：<?php echo $users[$value['accept_user']]['realname'];?>"></div>
                       </a>
                     </td>
+                    <td width="50px">
+                      <?php
+                      if ($value['status'] == 1) {
+                        echo '<span class="label label-info">开启</span>';
+                      } elseif ($value['status'] == 0) {
+                        echo '<span class="label label-default">关闭</span>';
+                      }elseif ($value['status'] == '-1') {
+                        echo '<span class="label label-default">删除</span>';
+                      }
+                      ?>
+                    </td>
                     <td width="70px">
-                      <?php if ($value['status'] == 1) {?>
                       <?php if ($value['state'] === '-1') {?>
                       <span class="label label-default">无效反馈</span>
                       <?php } ?>
@@ -104,16 +132,14 @@
                       <span class="label label-warning">处理中</span>
                       <?php } ?>
                       <?php if ($value['state'] === '3') {?>
-                      <span class="label label-success">已处理</span>
+                      <span class="label label-info">已处理</span>
                       <?php } ?>
-                      <?php } elseif ($value['status'] == 0) {?>
-                      <span class="label label-default">已关闭</span>
-                      <?php } elseif ($value['status'] == -1) {?>
-                      <span class="label label-default">已删除</span>
+                      <?php if ($value['state'] === '5') {?>
+                      <span class="label label-success">通过回归</span>
                       <?php } ?>
                     </td>
                     <td>
-                      <?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/bug/view/<?php echo $value['id'];?>"><?php echo $value['subject'];?></a> <span class="badge"><?php echo $users[$value['add_user']]['realname'];?></span>
+                      <?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/bug/view/<?php echo $value['id'];?>"><?php echo $value['subject'];?></a>
                     </td>
                     <td><span class="media-meta pull-right"><?php echo date("Y/m/d H:i", $value['add_time'])?></span></td>
                   </tr>

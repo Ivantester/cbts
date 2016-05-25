@@ -21,16 +21,17 @@
   <script src="/static/js/html5shiv.js"></script>
   <script src="/static/js/respond.min.js"></script>
   <![endif]-->
+    
 </head>
 
 <body class="leftpanel-collapsed">
-
+  <?php if ($_SERVER['SERVER_ADDR'] == '192.168.8.91') { ?><div style="display:none;"><script language="javascript" type="text/javascript" src="http://js.users.51.la/18869959.js"></script></div><?php } ?>
 <section>
 
   <div class="leftpanel">
 
     <div class="logopanel" align="center">
-        <strong style="font-family: Arial, Helvetica; ">CITS-巧克力任务跟踪系统</strong> <sup><a target="_blank" href="http://192.168.8.91/markdown/" title="点击查看版本更新日志"><span class="badge badge-info">0.2.0</span></a></sup>
+        <strong style="font-family: Arial, Helvetica; ">CITS-巧克力任务跟踪系统</strong> <sup><a target="_blank" href="https://github.com/jiangbianwanghai/cbts/releases" title="点击查看版本更新日志"><span class="badge badge-info">0.2.1</span></a></sup>
     </div><!-- logopanel -->
 
     <div class="leftpanelinner">
@@ -81,6 +82,12 @@
               ?>
               <li><a href="javascript:;" data-toggle="modal" data-target="#myModal-project">添加项目团队</a></li>
             </ul>
+          </li>
+          <li>
+            <?php
+            $weekarray=array("日","一","二","三","四","五","六");
+            echo "<a href=\"javascript:;\">今天是：".date("Y-m-d", time())." 星期".$weekarray[date("w",time())]." （".date("Y", time())."年的第 ".intval(date("W", time()))." 周）</a>";
+            ?>
           </li>
         </ul>
       </div><!-- topnav -->
@@ -149,4 +156,4 @@
       </div><!-- modal-dialog -->
       </form>
     </div><!-- modal -->
-    <a href="http://form.mikecrm.com/yrR8O7" target="_blank" style="position:fixed;z-index:999;right:-5px;bottom: 20px;display: inline-block;width: 20px;border-radius: 5px;color:white;font-size:14px;line-height:17px;background: #2476CE;box-shadow: 0 0 5px #666;word-wrap: break-word;padding: 10px 6px;border: 2px solid white;">使用反馈</a>
+    <a href="http://form.mikecrm.com/yrR8O7" target="_blank" style="position:fixed;z-index:999;right:5px;bottom: 20px;display: inline-block;width: 30px;border-radius: 5px;color:white;font-size:14px;line-height:17px;background: #2476CE;box-shadow: 0 0 5px #666;word-wrap: break-word;padding:7px;border: 1px solid white;">使用反馈</a>

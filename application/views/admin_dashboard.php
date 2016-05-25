@@ -17,7 +17,7 @@
         <ul class="nav nav-pills nav-stacked nav-email mb20">
           <li<?php if ($folder == 'to_me') {?> class="active"<?php } ?>><a href="/admin/index/to_me"><i class="glyphicon glyphicon-folder-<?php if ($folder == 'to_me') { echo 'open';} else { echo 'close';}?>"></i> 我负责的</a></li>
           <li<?php if ($folder == 'from_me') {?> class="active"<?php } ?>><a href="/admin/index/from_me"><i class="glyphicon glyphicon-folder-<?php if ($folder == 'from_me') { echo 'open';} else { echo 'close';}?>"></i> 我创建的</a></li>
-          <li<?php if ($folder == 'over') {?> class="active"<?php } ?>><a href="/admin/index/over"><i class="glyphicon glyphicon-folder-<?php if ($folder == 'over') { echo 'open';} else { echo 'close';}?>"></i> 已完成的</a></li>
+          <li<?php if ($folder == 'partin') {?> class="active"<?php } ?>><a href="/admin/index/partin"><i class="glyphicon glyphicon-folder-<?php if ($folder == 'partin') { echo 'open';} else { echo 'close';}?>"></i> 我参与的</a></li>
         </ul>
         <div class="mb10"></div>
         <ul class="nav nav-pills nav-stacked nav-email">
@@ -25,6 +25,10 @@
         </ul>
       </div><!-- col-sm-3 -->
       <div class="col-sm-9 col-lg-10">
+        <div class="alert alert-warning">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <strong>说明：</strong>5月4号后增加了对任务过程参与人员信息记录的功能。之前的数据由于没有记录信息。所以，在没有补全老数据之前，"我参与的"信息要比“我负责的”信息少属于正常现象。
+        </div>
         <div class="panel panel-default">
           <div class="panel-body">
             <?php if ($this->uri->segment(2, 'index') == 'index') { ?>
@@ -115,9 +119,20 @@
                 <tbody>
                   <?php
                     if ($rows) {
+                      $weekarray=array("日","一","二","三","四","五","六");
                       if (file_exists('./cache/users.conf.php'))
                           require './cache/users.conf.php';
                       foreach ($rows as $value) {
+                        $timeDay = date("Ymd", $value['add_time']);
+                        if (!isset($timeGroup[$timeDay])) {
+                          if ($timeDay == date("Ymd", time())) {
+                            $day = '<span style="color:green">今天</span>';
+                          } else {
+                            $day = date('Y-m-d', $value['add_time']).' 星期'.$weekarray[date("w",$value['add_time'])];
+                          }
+                          echo '<tr><td colspan="7"><span class="fa fa-calendar"></span> 创建时间：'.$day.'</td></tr>';
+                        }
+                        $timeGroup[$timeDay] = 1;
                   ?>
                   <tr class="unread">
                     <td>
@@ -151,7 +166,7 @@
                     <td align="center" width="30px">
                       <?php if ($value['type'] == 2) {?><i class="fa fa-bug tooltips" data-toggle="tooltip" title="BUG"></i><?php } ?><?php if ($value['type'] == 1) {?><i class="fa fa-magic tooltips" data-toggle="tooltip" title="TASK"></i><?php } ?>
                     </td>
-                    <td><?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/issue/view/<?php echo $value['id'];?>" target="_blank"><?php echo $value['issue_name'];?></a></span></td>
+                    <td><?php if ($value['level']) {?><?php echo "<strong style='color:#ff0000;' title='".$level[$value['level']]['alt']."'>".$level[$value['level']]['name']."</strong> ";?><?php } ?> <a href="/issue/view/<?php echo $value['id'];?>"><?php if ($value['status'] == '-1') { echo '<del>'.$value['issue_name'].'</del>'; } else { echo $value['issue_name']; } ?></a><?php if ($value['status'] == '-1') echo ' <span class="label label-default">已删除</span>'; ?></td>
                     <td><span class="media-meta pull-right"><?php echo date("Y/m/d H:i", $value['add_time'])?></span></td>
                   </tr>
                   <?php

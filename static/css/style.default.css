@@ -3207,6 +3207,10 @@ div.error label.error:before {
     background: #fff url(../images/user.png) no-repeat 95% center; 
 }
 
+.signinpanel .email {
+    background: #fff url(../images/email.png) no-repeat 95% center; 
+}
+
 .signinpanel .pword {
     background: #fff url(../images/locked.png) no-repeat 95% center; 
 }
@@ -4632,15 +4636,10 @@ div.error label.error:before {
     -moz-border-radius: 50px;
     -webkit-border-radius: 50px;
     border-radius: 50px;
+    border: 1px solid #f1f1f1;
     float: left;
 }
 
-.abc{
-    display: none;
-}
-.open{
-    display: block;
-}
 .deploy{
     cursor: pointer;
 }
@@ -4648,4 +4647,7 @@ div.error label.error:before {
     background-color: #1caf9a;
     color: #fff;
     text-align: center;
+}
+.ellipsis{
+    padding-right: 10px;
 }

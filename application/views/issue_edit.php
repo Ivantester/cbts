@@ -88,9 +88,7 @@
               <input type="hidden" value="<?php echo $row['id'];?>" id="id" name="id">
               <div class="panel-footer">
                 <div class="row">
-                  <div class="col-sm-9 col-sm-offset-3">
-                    <button class="btn btn-primary" id="btnSubmit">提交</button>
-                  </div>
+                  <button class="btn btn-primary" id="btnSubmit">提交</button>
                 </div>
               </div>
             
@@ -203,6 +201,7 @@ jQuery(document).ready(function(){
     placeholder : '这里输入内容...',
     toolbar : toolbar,  //工具栏
     defaultImage : '/static/simditor-2.3.6/images/image.png', //编辑器插入图片时使用的默认图片
+    pasteImage: true,
     upload: {
         url: '/admin/upload',
         params: {'<?php echo $this->security->get_csrf_token_name();?>':'<?php echo $this->security->get_csrf_hash();?>'}, //键值对,指定文件上传接口的额外参数,上传的时候随文件一起提交  
